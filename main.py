@@ -124,6 +124,63 @@ class Button:
         self.rect.update(self.X, self.Y, 128, 64)
 
 
+class Not:
+    def __init__(self, dir_not, pos_x, pos_y):
+        self.X = pos_x
+        self.Y = pos_y
+        self.rect = pygame.Rect(pos_x, pos_y, 64, 64)
+        self.img = pygame.image.load(dir_not)
+        self.img.set_alpha(0)  # esconder not
+        self.estado_atual = False  # Desligado
+
+    def desligar(self):
+        """
+        desliga a LED
+        :return: Nada
+        """
+        self.estado_atual = False
+        self.img.set_alpha(0)
+
+    def ligar(self):
+        """
+        liga a LED
+        :return: Nada
+        """
+        self.estado_atual = True
+        self.img.set_alpha(255)
+
+    def set_pos(self, x, y):
+        """
+        modifica a posição do not
+        :param x: posição do objeto em x
+        :param y: posição do objeto em y
+        :return: Nada
+        """
+        self.X = x
+        self.Y = y
+
+    def get_pos(self):
+        """
+        retorna o valor da posição X e Y do not
+        :return: tupla com as posições
+        """
+        return self.X, self.Y
+
+    def get_rect(self):
+        """
+        obtém o objeto rect do not
+        :return: pygame.Rect
+        """
+        return self.rect
+
+    def update_rect(self):
+        """
+        atualiza os valores do pygame.Rect do not
+        :return: Nada
+        """
+        self.rect.update(self.X, self.Y, 128, 64)
+
+
 class Cronometro:
     def __init__(self, i):
         self.inicio = None
@@ -154,18 +211,19 @@ class Game:
         self.resposta_certa = -1
         self.resposta = 0
         self.score_value = 0
-        self.cronometro = Cronometro(3)
+        self.cronometro = Cronometro(3.5)
         self.cronometro.iniciar_cronometro()
         self.gameover = False
+        self.qtd_nots = -1
 
         # Texto do score
-        self.font_score = pygame.font.Font("fonts/freesansbold.ttf", 32)
+        self.font_score = pygame.font.Font("fonts/RobotoMono-Regular.ttf", 32)
         self.text_score = self.font_score.render(f"Score = {self.score_value}",
                                                  True,
                                                  (255, 255, 255))
 
         # Título central do jogo
-        self.font_titulo = pygame.font.Font("fonts/freesansbold.ttf", 32)
+        self.font_titulo = pygame.font.Font("fonts/RobotoMono-Regular.ttf", 80)
         self.text_titulo = self.font_titulo.render("pense BEM rápido",
                                                    True,
                                                    (255, 255, 255))
@@ -198,10 +256,15 @@ class Game:
 
         # Inicializar os botões
         self.buttons = []
-        self.buttons.append(Button("imagens/button_verde.png", 1 * 128, 400))
-        self.buttons.append(Button("imagens/button_vermelho.png", 2.2 * 128, 400))
-        self.buttons.append(Button("imagens/button_amarelo.png", 3.4 * 128, 400))
-        self.buttons.append(Button("imagens/button_azul.png", 4.6 * 128, 400))
+        self.buttons.append(Button("imagens/button_verde.png", 2.1 * 128, 400))
+        self.buttons.append(Button("imagens/button_vermelho.png", 2.1 * 128, 480))
+        self.buttons.append(Button("imagens/button_amarelo.png", 3.3 * 128, 400))
+        self.buttons.append(Button("imagens/button_azul.png", 3.3 * 128, 480))
+
+        # Not
+
+        self.not1 = Not("imagens/not.png", 310, 300)
+        self.not2 = Not("imagens/not.png", 460, 300)
 
     def desenhar_leds(self):
         """
@@ -210,6 +273,10 @@ class Game:
         """
         for led in self.leds:
             self.screen.blit(led.img_atual, led.get_pos())
+
+    def desenhar_nots(self):
+        self.screen.blit(self.not1.img, self.not1.get_pos())
+        self.screen.blit(self.not2.img, self.not2.get_pos())
 
     def desenhar_buttons(self):
         """
@@ -229,17 +296,36 @@ class Game:
 
     def sortear_led(self):
         self.cronometro.reset()
-        sorteio = random.randint(0, 3)
+        sorteio_led_cor = random.randint(0, 3)  # 0 - verde , 1 - vermelho, 2 - amarelo, 3 - azul
+        sorteio_nots = random.randint(0, 2)  # 0 - sem nenhuma not, 1 - uma not, 2 - duas not
+        if self.score_value <= 4:  # Começa com nots a partir do 5
+            sorteio_nots = 0
         for i in range(len(self.leds)):
-            if i == sorteio:
+            if i == sorteio_led_cor:
                 self.leds[i].ligar()
             else:
                 self.leds[i].desligar()
-        for i in range(len(self.buttons)):
-            if i == sorteio:
-                self.buttons[i].botao_correto = True
+        if sorteio_nots == 0 or sorteio_nots == 2:
+            if sorteio_nots == 2:
+                self.not1.ligar()
+                self.not2.ligar()
             else:
-                self.buttons[i].botao_correto = False
+                self.not1.desligar()
+                self.not2.desligar()
+
+            for i in range(len(self.buttons)):
+                if i == sorteio_led_cor:
+                    self.buttons[i].botao_correto = True
+                else:
+                    self.buttons[i].botao_correto = False
+        elif sorteio_nots == 1:
+            self.not1.ligar()
+            self.not2.desligar()
+            for i in range(len(self.buttons)):
+                if i == sorteio_led_cor:
+                    self.buttons[i].botao_correto = False
+                else:
+                    self.buttons[i].botao_correto = True
 
     def resultado(self):
         soma = 0
@@ -304,10 +390,11 @@ if __name__ == "__main__":
     # Icone
     icon = pygame.image.load("imagens/icon.png")
     pygame.display.set_icon(icon)
-
     cronometro_inicio = Cronometro(2)
-    game.sortear_led()
+
     jogador_clicou = False
+    pausa_inicial = True
+
     # Game Loop
     while True:
 
@@ -325,22 +412,30 @@ if __name__ == "__main__":
                     game.gameover = False
                     jogador_clicou = False
                     game.score_value = 0
+                    game.sortear_led()
 
         if not game.gameover:
+
             screen.fill((10, 10, 10))  # Essa linha tem que ser a primeira
 
             # Desenhar os elementos na tela
             game.desenhar_leds()
             game.desenhar_buttons()
             game.desenhar_textos()
+            game.desenhar_nots()
+            pygame.display.update()
+
+            # Pausa para começar
+            if pausa_inicial:
+                pygame.time.delay(1200)
+                game.sortear_led()
+                pausa_inicial = False
 
             # Acende a Luz
             if game.cronometro.contagem():
                 # Lógica para dá game over quando o jogador não clica em nenhum botão
                 if not jogador_clicou:
                     game.tela_game_over()
-                else:
-                    game.sortear_led()
 
             game.game_update()
             pygame.display.update()
