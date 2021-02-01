@@ -2,8 +2,8 @@ import pygame
 import sys
 import random
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 800 # Largura da tela
+SCREEN_HEIGHT = 600 # Altura da tela
 
 
 class Led:
@@ -13,8 +13,8 @@ class Led:
         self.rect = pygame.Rect(pos_x, pos_y, 64, 64)
         self.img_desligado = pygame.image.load(dir_desligado)
         self.img_ligado = pygame.image.load(dir_ligado)
-        self.img_atual = self.img_desligado
-        self.estado_atual = False  # Desligado
+        self.img_atual = self.img_desligado  # Armazena a imagem ativada ou desativada
+        self.estado_atual = False  # False = desativado e True = ativado
 
     def desligar(self):
         """
@@ -74,11 +74,16 @@ class Led:
 
 class Button:
     def __init__(self, dir_button, pos_x, pos_y):
+        """
+        :param dir_button: diretório da imagem do botão
+        :param pos_x: posição no eixo X
+        :param pos_y: posição no eixo Y
+        """
         self.X = pos_x
         self.Y = pos_y
         self.rect = pygame.Rect(pos_x, pos_y, 128, 64)
         self.img = pygame.image.load(dir_button)
-        self.botao_correto = False
+        self.botao_correto = False  # Variável que vai dizer se o botão é o correto a se apertar
         self.pontuar = 0
 
     def set_pos(self, x, y):
@@ -106,13 +111,15 @@ class Button:
         return self.rect
 
     def is_clicked(self):
+        """
+        Verifica se o botão foi pressionado e também se foi pressionado correto
+        :return:
+        """
         if pygame.mouse.get_pressed()[0] and self.rect.collidepoint(pygame.mouse.get_pos()):
             if self.botao_correto:
-                self.pontuar = 1
+                self.pontuar = 1  # O botão correto soma 1 para ser verificado depois se acertou ou errou
             else:
                 self.pontuar = 0
-                # game over
-                # sys.exit()
             return True
         return False
 
@@ -125,7 +132,16 @@ class Button:
 
 
 class Not:
+    """
+    Classe para criação das NOTs
+    """
     def __init__(self, dir_not, pos_x, pos_y):
+        """
+        inicializar Not
+        :param dir_not: diretorio da imagem do not
+        :param pos_x: posição no eixo x
+        :param pos_y: posilção no eixo y
+        """
         self.X = pos_x
         self.Y = pos_y
         self.rect = pygame.Rect(pos_x, pos_y, 64, 64)
@@ -183,24 +199,44 @@ class Not:
 
 class Cronometro:
     def __init__(self, i):
+        """
+        Inicializa Cronometro
+        :param i: intervalo do timer em loop
+        """
         self.inicio = None
         self.intervalo = i
         self.is_pause = True
 
     def iniciar_cronometro(self):
-        self.inicio = pygame.time.get_ticks() / 1000
+        """
+        Inicializa o cronômetro para que o inicio fique fixo
+        :return: Nada
+        """
+        self.inicio = pygame.time.get_ticks()
         self.is_pause = False
 
     def contagem(self):
+        """
+        Função presente nos ifs para saber se contou até o intervalo especificado
+        :return: True se chegou no intervalo e False quando não chega
+        """
         if self.get_contagem() >= self.intervalo and not self.is_pause:
             self.inicio = pygame.time.get_ticks()
             return True
         return False
 
     def get_contagem(self):
+        """
+        Método para realizar o cálculo do tempo que se passou desde do inicio do cronometro em segundos
+        :return: boolean (segundos)
+        """
         return (pygame.time.get_ticks() - self.inicio) / 1000
 
     def reset(self):
+        """
+        Reseta o cronômetro
+        :return:
+        """
         self.inicio = pygame.time.get_ticks()
 
 
@@ -208,13 +244,13 @@ class Game:
     def __init__(self, tela):
         # Variáveis
         self.screen = tela
-        self.resposta_certa = -1
-        self.resposta = 0
-        self.score_value = 0
-        self.cronometro = Cronometro(3.5)
+        self.resposta_certa = -1  # armazena o botão certo para se pressionar
+        self.resposta = 0  # armazena o botão pressionado
+        self.score_value = 0  # armazena o tanto de acertos
+        self.tempo_de_pensar = 3.2  # velocidade para dá uma resposta
+        self.cronometro = Cronometro(self.tempo_de_pensar)
         self.cronometro.iniciar_cronometro()
-        self.gameover = False
-        self.qtd_nots = -1
+        self.gameover = False  # se true então errou ou passou o tempo
 
         # Texto do score
         self.font_score = pygame.font.Font("fonts/RobotoMono-Regular.ttf", 32)
@@ -275,6 +311,10 @@ class Game:
             self.screen.blit(led.img_atual, led.get_pos())
 
     def desenhar_nots(self):
+        """
+        desenha os dois NOTs na tela
+        :return:
+        """
         self.screen.blit(self.not1.img, self.not1.get_pos())
         self.screen.blit(self.not2.img, self.not2.get_pos())
 
@@ -295,17 +335,21 @@ class Game:
         self.screen.blit(self.text_score, (10, 10))
 
     def sortear_led(self):
-        self.cronometro.reset()
+        """
+        Função responsável pelo sorteio das leds e continuação do jogo
+        :return: Nada
+        """
+        self.cronometro.reset()  # reseta o cronômetro para zero e começa a contagem
         sorteio_led_cor = random.randint(0, 3)  # 0 - verde , 1 - vermelho, 2 - amarelo, 3 - azul
-        sorteio_nots = random.randint(0, 2)  # 0 - sem nenhuma not, 1 - uma not, 2 - duas not
-        if self.score_value <= 4:  # Começa com nots a partir do 5
+        sorteio_nots = random.randint(0, 4)  # 0,3,4 - sem nenhuma not, 1 - uma not, 2 - duas not
+        if self.score_value <= 5:  # Começa com nots a partir do 5
             sorteio_nots = 0
-        for i in range(len(self.leds)):
+        for i in range(len(self.leds)):  # Liga a porta para aparecer na tela
             if i == sorteio_led_cor:
                 self.leds[i].ligar()
             else:
                 self.leds[i].desligar()
-        if sorteio_nots == 0 or sorteio_nots == 2:
+        if sorteio_nots == 0 or sorteio_nots >= 2:
             if sorteio_nots == 2:
                 self.not1.ligar()
                 self.not2.ligar()
@@ -313,7 +357,7 @@ class Game:
                 self.not1.desligar()
                 self.not2.desligar()
 
-            for i in range(len(self.buttons)):
+            for i in range(len(self.buttons)):  # define um botão verdadeiro e o restante falso
                 if i == sorteio_led_cor:
                     self.buttons[i].botao_correto = True
                 else:
@@ -321,23 +365,31 @@ class Game:
         elif sorteio_nots == 1:
             self.not1.ligar()
             self.not2.desligar()
-            for i in range(len(self.buttons)):
+            for i in range(len(self.buttons)):  # define um botão falso e o restante verdadeiro
                 if i == sorteio_led_cor:
                     self.buttons[i].botao_correto = False
                 else:
                     self.buttons[i].botao_correto = True
 
     def resultado(self):
+        """
+        Método que faz a análise se o player acertou ou não
+        :return:
+        """
         soma = 0
         for button in self.buttons:
             soma += button.pontuar
             button.pontuar = 0
-        if soma == 1:
+        if soma == 1:  # Se o player acertou um botão no método de is_clicked() vai atribuir 1
             self.acertou()
         else:
             self.tela_game_over()
 
     def show_score(self):
+        """
+        Método que atualiza o valor do score na tela
+        :return: Nada
+        """
         self.text_score = self.font_score.render(f"Score = {self.score_value}",
                                                  True,
                                                  (255, 255, 255))
@@ -345,7 +397,7 @@ class Game:
 
     def game_update(self):
         """
-        Atualiza as posições dos elementos
+        Atualiza as posições dos elementos durante tdo loop
         :return: Nada
         """
         for led in self.leds:
@@ -356,6 +408,10 @@ class Game:
         self.show_score()
 
     def tela_game_over(self):
+        """
+        Forma a tela de game over e freeza o jogo até o player apertar espaço
+        :return: Nada
+        """
         self.gameover = True
         # Texto game over
         screen.fill((10, 10, 10))  # Essa linha tem que ser a primeira
@@ -365,17 +421,25 @@ class Game:
         pygame.display.update()
 
     def acertou(self):
+        """
+        Contabiliza os pontos de acerto e faz barulho
+        :return:
+        """
         self.score_value += 1
         self.score_up_sound.play()
         self.desligar_todas_leds()
         self.sortear_led()
 
     def desligar_todas_leds(self):
+        """
+        Desliga as leds e espera um delay para aparecer outra LEDs
+        :return:
+        """
         for led in self.leds:
             led.desligar()
         self.desenhar_leds()
         pygame.display.update()
-        pygame.time.delay(200)
+        pygame.time.delay(200)  # Pausa o jogo por 200ms do tempo para sortear outra LED
 
 
 if __name__ == "__main__":
@@ -401,10 +465,10 @@ if __name__ == "__main__":
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-            # Pressionou o botão
+            # Clicou com o esquerdo
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for button in game.buttons:
-                    if button.is_clicked():
+                    if button.is_clicked():  # verifica se o player pressionou ou não um botão dos 4
                         game.resultado()
             elif event.type == pygame.KEYDOWN and game.gameover:
                 if event.key == pygame.K_SPACE:
@@ -412,7 +476,7 @@ if __name__ == "__main__":
                     game.gameover = False
                     jogador_clicou = False
                     game.score_value = 0
-                    game.sortear_led()
+                    game.sortear_led()  # começa dnv a sortear
 
         if not game.gameover:
 
@@ -431,7 +495,7 @@ if __name__ == "__main__":
                 game.sortear_led()
                 pausa_inicial = False
 
-            # Acende a Luz
+            # Verifica se o player não apertou em nenhum botão para dá game over
             if game.cronometro.contagem():
                 # Lógica para dá game over quando o jogador não clica em nenhum botão
                 if not jogador_clicou:
@@ -439,5 +503,5 @@ if __name__ == "__main__":
 
             game.game_update()
             pygame.display.update()
-        else:
+        else:  # Else que fica preso na tela de game over até que seja pressionado <espaço>
             game.tela_game_over()
