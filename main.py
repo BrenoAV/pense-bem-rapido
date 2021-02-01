@@ -154,7 +154,9 @@ class Game:
         self.resposta_certa = -1
         self.resposta = 0
         self.score_value = 0
-        self.cronometro = Cronometro(2)
+        self.cronometro = Cronometro(3)
+        self.cronometro.iniciar_cronometro()
+        self.gameover = False
 
         # Texto do score
         self.font_score = pygame.font.Font("fonts/freesansbold.ttf", 32)
@@ -167,9 +169,22 @@ class Game:
         self.text_titulo = self.font_titulo.render("pense BEM rápido",
                                                    True,
                                                    (255, 255, 255))
-
         # Centralizar em X
         self.text_rect_titulo = self.text_titulo.get_rect(center=(SCREEN_WIDTH / 2, 100))
+
+        # Texto game over
+        self.font_game_over = pygame.font.Font("fonts/freesansbold.ttf", 70)
+        self.text_game_over = self.font_game_over.render("GAME OVER",
+                                                         True,
+                                                         (255, 255, 255))
+        # Centralizar em X e Y
+        self.text_rect_game_over = self.text_game_over.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+
+        # Texto do pressione espaço
+        self.text_pressione = self.font_score.render("Pressione <Espaço> para continuar",
+                                                     True,
+                                                     (255, 255, 255))
+        self.text_rect_pressione = self.text_pressione.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 60))
 
         # Sounds
         self.score_up_sound = pygame.mixer.Sound("sounds/score_up.wav")
@@ -234,7 +249,7 @@ class Game:
         if soma == 1:
             self.acertou()
         else:
-            self.game_over()
+            self.tela_game_over()
 
     def show_score(self):
         self.text_score = self.font_score.render(f"Score = {self.score_value}",
@@ -251,15 +266,30 @@ class Game:
             led.update_rect()
         for button in self.buttons:
             button.update_rect()
+
         self.show_score()
 
-    def game_over(self):
-        sys.exit()
+    def tela_game_over(self):
+        self.gameover = True
+        # Texto game over
+        screen.fill((10, 10, 10))  # Essa linha tem que ser a primeira
+        screen.blit(self.text_game_over, self.text_rect_game_over)
+        self.show_score()
+        screen.blit(self.text_pressione, self.text_rect_pressione)
+        pygame.display.update()
 
     def acertou(self):
         self.score_value += 1
         self.score_up_sound.play()
+        self.desligar_todas_leds()
         self.sortear_led()
+
+    def desligar_todas_leds(self):
+        for led in self.leds:
+            led.desligar()
+        self.desenhar_leds()
+        pygame.display.update()
+        pygame.time.delay(200)
 
 
 if __name__ == "__main__":
@@ -274,21 +304,12 @@ if __name__ == "__main__":
     # Icone
     icon = pygame.image.load("imagens/icon.png")
     pygame.display.set_icon(icon)
-    # Tempos
 
-    game.cronometro.iniciar_cronometro()
+    cronometro_inicio = Cronometro(2)
+    game.sortear_led()
+    jogador_clicou = False
     # Game Loop
     while True:
-        screen.fill((10, 10, 10))  # Essa linha tem que ser a primeira
-
-        # Desenhar os elementos na tela
-        game.desenhar_leds()
-        game.desenhar_buttons()
-        game.desenhar_textos()
-
-        # Acende a Luz
-        if game.cronometro.contagem():
-            game.sortear_led()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -298,6 +319,30 @@ if __name__ == "__main__":
                 for button in game.buttons:
                     if button.is_clicked():
                         game.resultado()
+            elif event.type == pygame.KEYDOWN and game.gameover:
+                if event.key == pygame.K_SPACE:
+                    # Reseta todos as variáveís
+                    game.gameover = False
+                    jogador_clicou = False
+                    game.score_value = 0
 
-        game.game_update()
-        pygame.display.update()
+        if not game.gameover:
+            screen.fill((10, 10, 10))  # Essa linha tem que ser a primeira
+
+            # Desenhar os elementos na tela
+            game.desenhar_leds()
+            game.desenhar_buttons()
+            game.desenhar_textos()
+
+            # Acende a Luz
+            if game.cronometro.contagem():
+                # Lógica para dá game over quando o jogador não clica em nenhum botão
+                if not jogador_clicou:
+                    game.tela_game_over()
+                else:
+                    game.sortear_led()
+
+            game.game_update()
+            pygame.display.update()
+        else:
+            game.tela_game_over()
