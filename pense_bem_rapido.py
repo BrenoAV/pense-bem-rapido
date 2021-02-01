@@ -280,6 +280,12 @@ class Game:
                                                      (255, 255, 255))
         self.text_rect_pressione = self.text_pressione.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 60))
 
+        # Texto brenoAV
+
+        self.text_brenoav = self.font_score.render("brenoAV",
+                                                   True,
+                                                   (255, 255, 255))
+
         # Sounds
         self.score_up_sound = pygame.mixer.Sound("sounds/score_up.wav")
 
@@ -333,6 +339,7 @@ class Game:
         """
         self.screen.blit(self.text_titulo, self.text_rect_titulo)
         self.screen.blit(self.text_score, (10, 10))
+        self.screen.blit(self.text_brenoav, (650, 550))
 
     def sortear_led(self):
         """
@@ -341,7 +348,7 @@ class Game:
         """
         self.cronometro.reset()  # reseta o cronômetro para zero e começa a contagem
         sorteio_led_cor = random.randint(0, 3)  # 0 - verde , 1 - vermelho, 2 - amarelo, 3 - azul
-        sorteio_nots = random.randint(0, 4)  # 0,3,4 - sem nenhuma not, 1 - uma not, 2 - duas not
+        sorteio_nots = random.randint(0, 3)  # 0,3 - sem nenhuma not, 1 - uma not, 2 - duas not
         if self.score_value <= 5:  # Começa com nots a partir do 5
             sorteio_nots = 0
         for i in range(len(self.leds)):  # Liga a porta para aparecer na tela
@@ -394,6 +401,7 @@ class Game:
                                                  True,
                                                  (255, 255, 255))
         self.screen.blit(self.text_score, (10, 10))
+        pygame.display.update()
 
     def game_update(self):
         """
@@ -404,7 +412,6 @@ class Game:
             led.update_rect()
         for button in self.buttons:
             button.update_rect()
-
         self.show_score()
 
     def tela_game_over(self):
@@ -416,8 +423,8 @@ class Game:
         # Texto game over
         screen.fill((10, 10, 10))  # Essa linha tem que ser a primeira
         screen.blit(self.text_game_over, self.text_rect_game_over)
-        self.show_score()
         screen.blit(self.text_pressione, self.text_rect_pressione)
+        self.show_score()
         pygame.display.update()
 
     def acertou(self):
